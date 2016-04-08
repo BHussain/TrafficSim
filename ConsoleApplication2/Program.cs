@@ -10,7 +10,7 @@ namespace ConsoleApplication2
     class Game : Microsoft.Xna.Framework.Game
     {
         GraphicsDeviceManager graphics;
-        TrafficSimulation.gameState gameState;
+        TrafficSimulation.GameState gameState;
 
         public Game()
         {
@@ -20,13 +20,13 @@ namespace ConsoleApplication2
 
         protected override void LoadContent()
         {
-            gameState = TrafficSimulation.initialState();
+            gameState = TrafficSimulation.InitialState();
             base.LoadContent();
         }
 
         protected override void Update(GameTime gameTime)
         {
-            gameState = TrafficSimulation.updateState(
+            gameState = TrafficSimulation.UpdateState(
               (float)gameTime.ElapsedGameTime.TotalSeconds,
               gameState);
             base.Update(gameTime);
@@ -35,7 +35,10 @@ namespace ConsoleApplication2
         protected override void Draw(GameTime gameTime)
         {
             //Print de huidige waarde van de stoplicht float
-            Console.WriteLine(gameState.trafficLight.Color);
+            //Console.WriteLine(gameState.TrafficLight.Color);
+            //Console.WriteLine(gameState.Child.Position);
+            Console.WriteLine(gameState.Car.Position);
+
             base.Draw(gameTime);
         }
     }

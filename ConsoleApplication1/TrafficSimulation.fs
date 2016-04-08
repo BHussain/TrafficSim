@@ -9,27 +9,82 @@ type Color =
     | Red of float32
     | Green of float32
 
-type trafficLight =
+type TrafficLight =
     {
         Color : Color
-        Position : int*int
+        Position : float32*float32
     }
 
-type gameState =
+type Child = 
     {
-        trafficLight : trafficLight
+        Position : float32*float32
+        Waiting : bool
     }
 
-let initialState()=
+type Car = 
     {
-        trafficLight = 
-        {
-            Color = Red(3.0f)
-            Position = 20,20
-         }
+        Position:float32*float32
+        Waiting:bool
     }
 
-let updateTrafficLight (trafficLight:trafficLight) (dt:float32) : trafficLight =
+let Walking (dt:float32) (child:Child) : Child =
+    {
+        child with Position = (fst(child.Position), snd(child.Position) - snd(child.Position) * dt * 10.0f)
+    }
+
+let Driving (dt:float32) (car:Car) :Car =
+    {
+        car with Position = (fst(car.Position) + fst(car.Position) * dt * 10.0f, snd(car.Position))
+    }
+
+type MovementStyle = 
+    | Walking
+    | Driving
+
+type Moveable = 
+    {
+        Position        : float32*float32
+        Waiting         : bool
+        MovementStyle   : MovementStyle
+    }
+
+type GameState =
+    {
+        TrafficLight : TrafficLight
+        Child : Child
+        Car : Car
+        Moveable : Moveable
+    }
+
+let InitialState()=
+    {
+        TrafficLight = 
+            {
+                Color = Red(3.0f)
+                Position = 20.0f, 20.0f
+            }
+
+        Child = 
+            {
+                Position = (0.0f, 20.0f)
+                Waiting = true
+            }
+
+        Car = 
+            {
+                Position = (50.0f, 0.0f)
+                Waiting = true
+            }
+
+        Moveable = 
+            {
+                Position = (50.0f, 0.0f)
+                Waiting = true
+                MovementStyle = Driving
+            }
+    }
+
+let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : TrafficLight =
     let newColor = 
         match trafficLight.Color with
         | Red t ->
@@ -43,8 +98,11 @@ let updateTrafficLight (trafficLight:trafficLight) (dt:float32) : trafficLight =
             else
                 Green(t - dt)
     { trafficLight with Color = newColor }
+
+
     
-let updateState (dt:float32) (gameState:gameState) =
+let UpdateState (dt:float32) (gameState:GameState) =
     {
-        gameState with trafficLight = updateTrafficLight gameState.trafficLight dt
+        gameState with TrafficLight = UpdateTrafficLight gameState.TrafficLight dt;
+                       Moveable = gameState.Moveable.MovementStyle dt gameState.Car
     }
