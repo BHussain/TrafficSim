@@ -34,10 +34,7 @@ namespace ConsoleApplication2
 
         protected override void Draw(GameTime gameTime)
         {
-            //Print de huidige waarde van de stoplicht float
-            //Console.WriteLine(gameState.TrafficLight.Color);
-            //Console.WriteLine(gameState.Child.Position);
-            Console.WriteLine(gameState.Car.Position);
+            Console.WriteLine("Moveable is a car? "+gameState.Moveable.MoveableType.IsCar+", Position: "+gameState.Moveable.Position);
 
             base.Draw(gameTime);
         }

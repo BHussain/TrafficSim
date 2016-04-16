@@ -15,44 +15,20 @@ type TrafficLight =
         Position : float32*float32
     }
 
-type Child = 
-    {
-        Position : float32*float32
-        Waiting : bool
-    }
-
-type Car = 
-    {
-        Position:float32*float32
-        Waiting:bool
-    }
-
-let Walking (dt:float32) (child:Child) : Child =
-    {
-        child with Position = (fst(child.Position), snd(child.Position) - snd(child.Position) * dt * 10.0f)
-    }
-
-let Driving (dt:float32) (car:Car) :Car =
-    {
-        car with Position = (fst(car.Position) + fst(car.Position) * dt * 10.0f, snd(car.Position))
-    }
-
-type MovementStyle = 
-    | Walking
-    | Driving
+type MoveableType = 
+    | Child
+    | Car
 
 type Moveable = 
     {
         Position        : float32*float32
         Waiting         : bool
-        MovementStyle   : MovementStyle
+        MoveableType    : MoveableType
     }
 
 type GameState =
     {
         TrafficLight : TrafficLight
-        Child : Child
-        Car : Car
         Moveable : Moveable
     }
 
@@ -64,23 +40,11 @@ let InitialState()=
                 Position = 20.0f, 20.0f
             }
 
-        Child = 
-            {
-                Position = (0.0f, 20.0f)
-                Waiting = true
-            }
-
-        Car = 
-            {
-                Position = (50.0f, 0.0f)
-                Waiting = true
-            }
-
         Moveable = 
             {
-                Position = (50.0f, 0.0f)
+                Position = (50.0f, 50.0f)
                 Waiting = true
-                MovementStyle = Driving
+                MoveableType = Car
             }
     }
 
@@ -99,10 +63,23 @@ let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : TrafficLight =
                 Green(t - dt)
     { trafficLight with Color = newColor }
 
+let Walking (child:Moveable) (dt:float32) : Moveable =
+    {
+        child with Position = (fst(child.Position), snd(child.Position) - snd(child.Position) * dt * 10.0f)
+    }
 
-    
+let Driving (car:Moveable) (dt:float32) : Moveable =
+    {
+        car with Position = (fst(car.Position) + fst(car.Position) * dt * 10.0f, snd(car.Position))
+    }
+
+let UpdateMoveable (moveable:Moveable) (dt:float32) =
+    match moveable.MoveableType with
+    | Car -> Driving moveable dt
+    | Child -> Walking moveable dt
+   
 let UpdateState (dt:float32) (gameState:GameState) =
     {
-        gameState with TrafficLight = UpdateTrafficLight gameState.TrafficLight dt;
-                       Moveable = gameState.Moveable.MovementStyle dt gameState.Car
+        gameState with TrafficLight = UpdateTrafficLight gameState.TrafficLight dt
+                       Moveable = UpdateMoveable gameState.Moveable dt
     }
