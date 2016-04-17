@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace ConsoleApplication2
 {
     class Game : Microsoft.Xna.Framework.Game
     {
+        SpriteBatch spriteBatch;
         GraphicsDeviceManager graphics;
         TrafficSimulation.GameState gameState;
 
@@ -20,6 +22,7 @@ namespace ConsoleApplication2
 
         protected override void LoadContent()
         {
+            spriteBatch = new SpriteBatch(GraphicsDevice);
             gameState = TrafficSimulation.InitialState();
             base.LoadContent();
         }
@@ -34,7 +37,18 @@ namespace ConsoleApplication2
 
         protected override void Draw(GameTime gameTime)
         {
-            Console.WriteLine("Moveable is a car? "+gameState.Moveable.MoveableType.IsCar+", Position: "+gameState.Moveable.Position);
+            //Console.WriteLine("Moveable is a car? "+gameState.Moveable.MoveableType.IsCar+", Position: "+gameState.Moveable.Position);
+
+            GraphicsDevice.Clear(Color.LightGray);
+
+            spriteBatch.Begin();
+            foreach (var drawable in TrafficSimulation.drawState(gameState))
+            {
+                spriteBatch.Draw(Content.Load<Texture2D>(drawable.Image), 
+                    new Vector2(drawable.Position.Item1, drawable.Position.Item2), 
+                    Color.White);
+            }
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
