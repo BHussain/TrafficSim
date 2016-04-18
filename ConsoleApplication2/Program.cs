@@ -38,7 +38,7 @@ namespace ConsoleApplication2
         protected override void Draw(GameTime gameTime)
         {
             //Console.WriteLine("Moveable is a car? "+gameState.Moveable.MoveableType.IsCar+", Position: "+gameState.Moveable.Position);
-            Console.WriteLine(gameState.Moveables.IsEmpty);
+            //Console.WriteLine(gameState.Moveables.IsEmpty);
             GraphicsDevice.Clear(Color.LightGray);
 
             spriteBatch.Begin();

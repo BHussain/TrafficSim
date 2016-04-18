@@ -91,30 +91,39 @@ let InitialState()=
 
 let randomCar() =
   {
-    Car.Position = (10.0f, 150.0f)
+    Car.Position = (-100.0f, 150.0f)
     Car.Waiting = false;
     Car.Velocity = 3.0f;
   }
 
 let randomChild() =
   {
-    Child.Position = (500.0f, 400.0f)
+    Child.Position = (500.0f, 500.0f)
     Child.Waiting = false;
     Child.Velocity = 1.0f;
   }
 
 let updateChild  (dt:float32) (child:Child): Child =
-    {
-        child with Position = (fst(child.Position), snd(child.Position) - child.Velocity)
+    let stopPos = 250.0f
+    {       
+        child with Position = 
+                            if snd(child.Position) < stopPos && snd(child.Position) > (stopPos - 10.0f) then
+                                child.Position
+                            else
+                                (fst(child.Position), snd(child.Position) - child.Velocity)
     }
 
 let updateCar (dt:float32) (car:Car) : Car =
+    let stopPos = 400.0f
     {
-        car with Position = (fst(car.Position) + car.Velocity), snd(car.Position)
+        car with Position = 
+                            if fst(car.Position) > stopPos && fst(car.Position) < (stopPos + 10.0f) then
+                                car.Position
+                            else
+                                (fst(car.Position) + car.Velocity), snd(car.Position)
     }
 
 let updateSpawner (spawner:Spawner)(dt:float32) :Spawner =
-        let r = new System.Random()
         match spawner with
         | Ready ->
             spawner
@@ -122,8 +131,7 @@ let updateSpawner (spawner:Spawner)(dt:float32) :Spawner =
             if t > 0.0f then
                 Cooldown(t-dt)
             else
-                Ready
-    
+                Ready    
 
 let updateCars (dt:float32) (cars:List<Car>)(spawnCar:bool) : List<Car> =
   let cars = 
@@ -132,15 +140,21 @@ let updateCars (dt:float32) (cars:List<Car>)(spawnCar:bool) : List<Car> =
         else
         cars
   let cars = map (updateCar dt) cars
+  let insideScreen (c:Car) : bool =
+    fst(c.Position) < 800.0f
+  let cars = filter insideScreen cars
   cars
 
-let updateChildren (dt:float32) (children:List<Child>)(spawnChild:bool) : List<Child> =
+let updateChildren (dt:float32) (children:List<Child>) (spawnChild:bool) : List<Child> =
   let children = 
         if  spawnChild = true then
             randomChild() << children
         else
         children
   let children = map (updateChild dt) children
+  let insideScreen (c:Child) : bool =
+    snd(c.Position) > -20.0f
+  let children = filter insideScreen children
   children
 
 //let updateList (dt:float32) (list:List<'a>)(canSpawn:bool) : List<'a> =
@@ -180,7 +194,10 @@ let UpdateState (dt:float32) (gameState:GameState) =
     let spawnCar,newCarSpawner = 
         match gameState.carSpawner with
             | Ready ->
+                if length gameState.cars < 3 then
                     true, Cooldown 2.0f
+                else
+                    false, Ready
             | Cooldown t ->
                 if t > 0.0f then
                     false, Cooldown(t-dt)
@@ -190,7 +207,10 @@ let UpdateState (dt:float32) (gameState:GameState) =
     let spawnChild, newChildSpawner =
         match gameState.carSpawner with
             | Ready ->
-                    true, Cooldown 1.0f
+                    if length gameState.children < 3 then
+                        true, Cooldown 1.0f
+                    else
+                        false, Ready
             | Cooldown t ->
                 if t > 0.0f then
                     false, Cooldown(t-dt)
@@ -237,21 +257,3 @@ type Drawable =
     }
   ] @ listOfDrawableCars @listOfDrawableChildren
     |> Seq.ofList
-
-//let drawState (gameState:GameState) : seq<Drawable> =
-//  [
-//    {
-//      Drawable.Position = gameState.TrafficLight.Position
-//      Drawable.Image    = match gameState.TrafficLight.Color with
-//                          | Red t -> "red.png"
-//                          | Green t -> "green.png"
-//    }
-//    {
-//      Drawable.Position = gameState.Moveable1.Position
-//      Drawable.Image    = "car_red.png"
-//    }
-//    {
-//      Drawable.Position = gameState.Moveable2.Position
-//      Drawable.Image    = "character_black_blue.png"
-//    }
-//  ]  |> Seq.ofList
