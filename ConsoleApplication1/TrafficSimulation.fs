@@ -113,14 +113,28 @@ let updateChild  (dt:float32) (child:Child): Child =
                                 (fst(child.Position), snd(child.Position) - child.Velocity)
     }
 
-let updateCar (dt:float32) (car:Car) : Car =
+let rec noCollision (car:Car) (cars:List<Car>) : bool =
+    match cars with
+        |Empty -> true
+        |Node(x,xs) ->
+            if(fst(x.Position)<>fst(car.Position)) then
+                if(abs(fst(x.Position)-fst(car.Position))<150.0f)then
+                    false
+                else
+                    noCollision car xs
+            else
+                noCollision car xs 
+
+let updateCar (cars:List<Car>)(dt:float32) (car:Car)  : Car =
     let stopPos = 400.0f
     {
         car with Position = 
                             if fst(car.Position) > stopPos && fst(car.Position) < (stopPos + 10.0f) then
                                 car.Position
-                            else
+                            elif noCollision car cars then
                                 (fst(car.Position) + car.Velocity), snd(car.Position)
+                            else
+                                car.Position
     }
 
 let updateSpawner (spawner:Spawner)(dt:float32) :Spawner =
@@ -139,7 +153,7 @@ let updateCars (dt:float32) (cars:List<Car>)(spawnCar:bool) : List<Car> =
             randomCar() << cars
         else
         cars
-  let cars = map (updateCar dt) cars
+  let cars = map (updateCar cars dt) cars
   let insideScreen (c:Car) : bool =
     fst(c.Position) < 800.0f
   let cars = filter insideScreen cars
@@ -156,23 +170,6 @@ let updateChildren (dt:float32) (children:List<Child>) (spawnChild:bool) : List<
     snd(c.Position) > -20.0f
   let children = filter insideScreen children
   children
-
-//let updateList (dt:float32) (list:List<'a>)(canSpawn:bool) : List<'a> =
-//  let children = 
-//        if  canSpawn = true then
-//            match list with
-//            | Empty -> Empty
-//            | Node(x:'a,xs:List<'a>) ->
-//                match x.GetType with
-//                | Child ->
-//                    randomChild() << list
-//                | Car ->
-//                    randomCar() << list
-//            randomChild() << children
-//        else
-//        children
-//  let children = map (updateChild dt) children
-//  children 
 
 let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : TrafficLight =
     let newColor = 
@@ -223,7 +220,7 @@ let UpdateState (dt:float32) (gameState:GameState) =
                         TrafficLight = UpdateTrafficLight gameState.TrafficLight dt
                         cars = updateCars dt gameState.cars spawnCar
                         children = updateChildren dt gameState.children spawnChild
-    }
+    }                    
 
 type Drawable = 
   {
