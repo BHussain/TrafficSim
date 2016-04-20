@@ -49,10 +49,6 @@ type TrafficLight =
         Position : float32*float32
     }
 
-//type MoveableType = 
-//    | Child
-//    | Car
-
 type Child =
     {
         Position        : float32*float32
@@ -112,15 +108,6 @@ let rec retrieveCarsRight (car:Car) (cars:List<Car>)  =
         else
             retrieveCarsRight car xs
 
-let rec carsRight (car:Car) (cars:List<Car>) : bool =
-    match cars with
-    |Empty -> false
-    |Node(x,xs) ->
-        if(fst(car.Position)<fst(x.Position)) then
-            true
-        else
-            carsRight car xs
-
 let rec noCarCollision (car:Car) (cars:List<Car>) : bool =
     match cars with
         |Empty -> true
@@ -133,23 +120,14 @@ let rec noCarCollision (car:Car) (cars:List<Car>) : bool =
             else
                 noCarCollision car xs
 
-let rec retrieveChildrenTop (child:Child) (children:List<Child>)  =
+let rec retrieveChildrenAbove (child:Child) (children:List<Child>) =
     match children with
     |Empty -> Empty
     |Node(x,xs) ->
         if(snd(child.Position)>snd(x.Position)) then
-            Node(x,(retrieveChildrenTop child xs))
+            Node(x,(retrieveChildrenAbove child xs))
         else
-            retrieveChildrenTop child xs
-
-let rec childrenTop (child:Child) (children:List<Child>) : bool =
-    match children with
-    |Empty -> false
-    |Node(x,xs) ->
-        if(snd(child.Position)>snd(x.Position)) then
-            true
-        else
-            childrenTop child xs
+            retrieveChildrenAbove child xs
 
 let rec noChildCollision (child:Child) (children:List<Child>) : bool =
     match children with
@@ -167,55 +145,34 @@ let updateCar (cars:List<Car>) (trafficLightColor:Color) (dt:float32) (car:Car) 
     let stopPos = 275.0f
     {
         car with Position = 
-                            if carsRight car cars then
-                                let x = retrieveCarsRight car cars
-                                if noCarCollision car x then
-                                    if fst(car.Position) > stopPos && fst(car.Position) < (stopPos + 10.0f) then
-                                        match trafficLightColor with
-                                            | Red t -> 
-                                                    car.Position
-                                            | Green t ->
-                                                    (fst(car.Position) + car.Velocity), snd(car.Position)
-
-                                    else
-                                        (fst(car.Position) + car.Velocity), snd(car.Position)
+                            if noCarCollision car (retrieveCarsRight car cars) then
+                                if fst(car.Position) > stopPos && fst(car.Position) < (stopPos + 10.0f) then
+                                    match trafficLightColor with
+                                        | Red t -> 
+                                                car.Position
+                                        | Green t ->
+                                                (fst(car.Position) + car.Velocity), snd(car.Position)
                                 else
-                                    car.Position
-                            elif fst(car.Position) > stopPos && fst(car.Position) < (stopPos + 10.0f) then
-                                        match trafficLightColor with
-                                            | Red t -> 
-                                                    car.Position
-                                            | Green t ->
-                                                    (fst(car.Position) + car.Velocity), snd(car.Position)
+                                    (fst(car.Position) + car.Velocity), snd(car.Position)
                             else
-                                (fst(car.Position) + car.Velocity), snd(car.Position)
+                                car.Position
     }
 
 let updateChild (children:List<Child>) (trafficLightColor:Color) (dt:float32) (child:Child) : Child =
     let stopPos = 250.0f
     {   
         child with Position = 
-                            if childrenTop child children then
-                                let x = retrieveChildrenTop child children
-                                if noChildCollision child x then
-                                    if snd(child.Position) < stopPos && snd(child.Position) > (stopPos - 10.0f) then
-                                        match trafficLightColor with
-                                        | Red t -> 
-                                            child.Position
-                                        | Green t ->
-                                            (fst(child.Position), snd(child.Position) - child.Velocity)
-                                    else
-                                    (fst(child.Position), snd(child.Position) - child.Velocity)
+                            if noChildCollision child (retrieveChildrenAbove child children) then
+                                if snd(child.Position) < stopPos && snd(child.Position) > (stopPos - 10.0f) then
+                                    match trafficLightColor with
+                                    | Red t -> 
+                                        child.Position
+                                    | Green t ->
+                                        (fst(child.Position), snd(child.Position) - child.Velocity)
                                 else
-                                    child.Position
-                            elif snd(child.Position) < stopPos && snd(child.Position) > (stopPos - 10.0f) then
-                                match trafficLightColor with
-                                | Red t -> 
-                                    child.Position
-                                | Green t ->
-                                    (fst(child.Position), snd(child.Position) - child.Velocity)
-                            else
                                 (fst(child.Position), snd(child.Position) - child.Velocity)
+                            else
+                                child.Position
     }
 
 let updateSpawner (spawner:Spawner)(dt:float32) :Spawner =
