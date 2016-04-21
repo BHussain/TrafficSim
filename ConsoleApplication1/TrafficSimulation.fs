@@ -219,7 +219,7 @@ let TurningRed (trafficLight:TrafficLight) : bool =
     match trafficLight.Color with
     | Red t -> false
     | Green t ->
-        if t <= 0.0f then
+        if t > 0.0f && t < 0.1f then
             true
         else
             false
@@ -238,37 +238,39 @@ let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : (TrafficLight)
     { trafficLight with Color = newColor}
             
 let UpdateTrafficLights (trafficLights:TrafficLight*TrafficLight) (dt:float32) : (TrafficLight*TrafficLight) =
-    let turningRed1 = TurningRed (fst(trafficLights))
-    let turningRed2 = TurningRed (snd(trafficLights))
+    let turningRedCars = TurningRed (fst(trafficLights))
+    let turningRedChildren = TurningRed (snd(trafficLights))
 
-    if turningRed1 = true && turningRed2 = false then 
-        let t1 =  
+    if turningRedCars = true && turningRedChildren = false then 
+        let trafficLightCars =  
             {
                 Color = Red(5.0f)
                 Position = fst(trafficLights).Position
             }
-        let t2 =
+        let trafficLightChildren =
             {
                 Color = Red(2.0f)
                 Position = snd(trafficLights).Position
             }
-        (t1,t2)
-    elif turningRed1 = false && turningRed2 = true then 
-        let t1 =  
+        (trafficLightCars, trafficLightChildren)
+
+    elif turningRedCars = false && turningRedChildren = true then 
+        let trafficLightCars =  
             {
                 Color = Red(2.0f)
                 Position = fst(trafficLights).Position
             }
-        let t2 =
+        let trafficLightChildren =
             {
                 Color = Red(5.0f)
                 Position = snd(trafficLights).Position
             }
-        (t1,t2)
+        (trafficLightCars, trafficLightChildren)
+
     else
-        let t1 = UpdateTrafficLight (fst(trafficLights)) dt
-        let t2 = UpdateTrafficLight (snd(trafficLights)) dt
-        (t1,t2)
+        let trafficLightCars = UpdateTrafficLight (fst(trafficLights)) dt
+        let trafficLightChildren = UpdateTrafficLight (snd(trafficLights)) dt
+        (trafficLightCars, trafficLightChildren)
    
 let UpdateState (dt:float32) (gameState:GameState) =    
     let spawnCar,newCarSpawner = 
