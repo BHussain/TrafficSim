@@ -65,29 +65,35 @@ type Car =
 
 type GameState =
     {
-        carSpawner : Spawner
-        childSpawner : Spawner
-        TrafficLight : TrafficLight
-        cars : List<Car>
-        children : List<Child>
+        CarSpawner : Spawner
+        ChildSpawner : Spawner
+        TrafficLightCars : TrafficLight
+        TrafficLightChildren : TrafficLight
+        Cars : List<Car>
+        Children : List<Child>
     }
 
 let InitialState()=
     {
-        carSpawner = Spawner.Ready
-        childSpawner = Spawner.Ready
-        TrafficLight = 
+        CarSpawner = Spawner.Ready
+        ChildSpawner = Spawner.Ready
+        TrafficLightCars = 
             {
                 Color = Red(3.0f)
-                Position = 400.0f, 220.0f
+                Position = 435.0f, 223.0f
             }
-        cars = Empty
-        children = Empty
+        TrafficLightChildren = 
+            {
+                Color = Green(3.0f)
+                Position = 567.0f, 118.0f
+            }
+        Cars = Empty
+        Children = Empty
     }
 
 let randomCar() =
   {
-    Car.Position = (-100.0f, 150.0f)
+    Car.Position = (-100.0f, 148.0f)
     Car.Waiting = false;
     Car.Velocity = 5.0f;
   }
@@ -142,7 +148,7 @@ let rec noChildCollision (child:Child) (children:List<Child>) : bool =
                 noChildCollision child xs
 
 let updateCar (cars:List<Car>) (trafficLightColor:Color) (dt:float32) (car:Car) : Car =
-    let stopPos = 275.0f
+    let stopPos = 285.0f
     {
         car with Position = 
                             if noCarCollision car (retrieveCarsRight car cars) then
@@ -209,7 +215,16 @@ let updateChildren (dt:float32) (children:List<Child>) (trafficLightColor:Color)
   let children = filter insideScreen children
   children
 
-let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : TrafficLight =
+let TurningRed (trafficLight:TrafficLight) : bool =
+    match trafficLight.Color with
+    | Red t -> false
+    | Green t ->
+        if t <= 0.0f then
+            true
+        else
+            false
+
+let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : (TrafficLight) =   
     let newColor = 
         match trafficLight.Color with
         | Red t ->
@@ -218,17 +233,48 @@ let UpdateTrafficLight (trafficLight:TrafficLight) (dt:float32) : TrafficLight =
             else
                 Red(t - dt)
         | Green t ->
-            if t <= 0.0f then
-                Red(3.0f)
-            else
-                Green(t - dt)
-    { trafficLight with Color = newColor }
+            Green(t - dt)
+
+    { trafficLight with Color = newColor}
+            
+let UpdateTrafficLights (trafficLights:TrafficLight*TrafficLight) (dt:float32) : (TrafficLight*TrafficLight) =
+    let turningRed1 = TurningRed (fst(trafficLights))
+    let turningRed2 = TurningRed (snd(trafficLights))
+
+    if turningRed1 = true && turningRed2 = false then 
+        let t1 =  
+            {
+                Color = Red(5.0f)
+                Position = fst(trafficLights).Position
+            }
+        let t2 =
+            {
+                Color = Red(2.0f)
+                Position = snd(trafficLights).Position
+            }
+        (t1,t2)
+    elif turningRed1 = false && turningRed2 = true then 
+        let t1 =  
+            {
+                Color = Red(2.0f)
+                Position = fst(trafficLights).Position
+            }
+        let t2 =
+            {
+                Color = Red(5.0f)
+                Position = snd(trafficLights).Position
+            }
+        (t1,t2)
+    else
+        let t1 = UpdateTrafficLight (fst(trafficLights)) dt
+        let t2 = UpdateTrafficLight (snd(trafficLights)) dt
+        (t1,t2)
    
 let UpdateState (dt:float32) (gameState:GameState) =    
     let spawnCar,newCarSpawner = 
-        match gameState.carSpawner with
+        match gameState.CarSpawner with
             | Ready ->
-                if length gameState.cars < 3 then
+                if length gameState.Cars < 3 then
                     true, Cooldown 2.0f
                 else
                     false, Ready
@@ -239,9 +285,9 @@ let UpdateState (dt:float32) (gameState:GameState) =
                     false, Ready
 
     let spawnChild, newChildSpawner =
-        match gameState.childSpawner with
+        match gameState.ChildSpawner with
             | Ready ->
-                    if length gameState.children < 3 then
+                    if length gameState.Children < 3 then
                         true, Cooldown 1.0f
                     else
                         false, Ready
@@ -251,12 +297,14 @@ let UpdateState (dt:float32) (gameState:GameState) =
                 else
                     false, Ready
 
+    let trafficLights = UpdateTrafficLights (gameState.TrafficLightCars, gameState.TrafficLightChildren) dt
     {
-        gameState with  carSpawner = newCarSpawner
-                        childSpawner = newChildSpawner
-                        TrafficLight = UpdateTrafficLight gameState.TrafficLight dt
-                        cars = updateCars dt gameState.cars gameState.TrafficLight.Color spawnCar
-                        children = updateChildren dt gameState.children gameState.TrafficLight.Color spawnChild
+        gameState with  CarSpawner = newCarSpawner
+                        ChildSpawner = newChildSpawner
+                        TrafficLightCars = fst(trafficLights)
+                        TrafficLightChildren = snd(trafficLights)
+                        Cars = updateCars dt gameState.Cars gameState.TrafficLightCars.Color spawnCar
+                        Children = updateChildren dt gameState.Children gameState.TrafficLightChildren.Color spawnChild
     }                    
 
 type Drawable = 
@@ -265,27 +313,33 @@ type Drawable =
     Image    : string
   }
 
- let drawCars (car:Car) : Drawable =
+let drawCars (car:Car) : Drawable =
   {
     Drawable.Position = car.Position
     Drawable.Image    = "car_red.png"
   }
 
- let drawChildren (child:Child) : Drawable =
+let drawChildren (child:Child) : Drawable =
    {
     Drawable.Position = child.Position
     Drawable.Image    = "character_black_blue.png"
    }
 
- let drawState (gameState:GameState) : seq<Drawable> =
+let drawState (gameState:GameState) : seq<Drawable> =
   let listOfDrawableCars =
-    map drawCars gameState.cars |> toFSharpList
+    map drawCars gameState.Cars |> toFSharpList
   let listOfDrawableChildren =
-    map drawChildren gameState.children |> toFSharpList
+    map drawChildren gameState.Children |> toFSharpList
   [
     {
-      Drawable.Position = gameState.TrafficLight.Position
-      Drawable.Image    = match gameState.TrafficLight.Color with
+      Drawable.Position = gameState.TrafficLightCars.Position
+      Drawable.Image    = match gameState.TrafficLightCars.Color with
+                          | Red t -> "red.png"
+                          | Green t -> "green.png"
+    }
+    {
+      Drawable.Position = gameState.TrafficLightChildren.Position
+      Drawable.Image    = match gameState.TrafficLightChildren.Color with
                           | Red t -> "red.png"
                           | Green t -> "green.png"
     }
